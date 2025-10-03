@@ -1,0 +1,21 @@
+name = "dodo"
+compatibility_date = "2024-01-15"
+compatibility_flags = ["nodejs_compat"]
+
+# For pay.imaginea.store domain
+routes = [
+  { pattern = "pay.imaginea.store/*", zone_name = "imaginea.store" }
+]
+
+# Environment variables (will be set in Cloudflare dashboard)
+[vars]
+DODO_PAYMENTS_API_KEY = "your_api_key_here"
+DODO_PAYMENTS_WEBHOOK_KEY = "your_webhook_key_here"
+DODO_PAYMENTS_RETURN_URL = "https://pay.imaginea.store/payment-return"
+DODO_PAYMENTS_ENVIRONMENT = "test_mode"
+
+# If using KV for persistence (recommended)
+[[kv_namespaces]]
+binding = "PAYMENTS_STORE"
+id = "your_kv_namespace_id"
+preview_id = "your_kv_namespace_id"
