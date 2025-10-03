@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dodo Payments Test</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            padding: 40px;
+            max-width: 600px;
+            width: 100%;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 32px;
+        }
+
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 16px;
+        }
+
+        .status-indicator {
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+            display: none;
+            align-items: center;
+            gap: 10px;
+            font-weight: 500;
+        }
+
+        .status-indicator.success {
+            background: #d4edda;
+            color: #155724;
+            border: 2px solid #c3e6cb;
+            display: flex;
+        }
+
+        .status-indicator.failed {
+            background: #f8d7da;
+            color: #721c24;
+            border: 2px solid #f5c6cb;
+            display: flex;
+        }
+
+        .status-indicator.processing {
+            background: #fff3cd;
+            color: #856404;
+            border: 2px solid #ffeaa7;
+            display: flex;
+        }
+
+        .status-indicator.cancelled {
+            background: #e2e3e5;
+            color: #383d41;
+            border: 2px solid #d6d8db;
+            display: flex;
+        }
+
+        .status-icon {
+            font-size: 24px;
+        }
+
+        .checkout-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 16px 32px;
+            font-size: 18px;
+            border-radius: 10px;
+            cursor: pointer;
+            width: 100%;
+            transition: transform 0.2s, box-shadow 0.2s;
+            font-weight: 600;
+        }
+
+        .checkout-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        .checkout-btn:active {
+            transform: translateY(0);
+        }
+
+        .product-info {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+        }
+
+        .product-info h3 {
+            color: #333;
+            margin-bottom: 15px;
+        }
+
+        .product-detail {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            color: #555;
+        }
+
+        .product-detail strong {
+            color: #333;
+        }
+
+        .payment-history {
+            margin-top: 30px;
+            padding-top: 30px;
+            border-top: 2px solid #e9ecef;
+        }
+
+        .payment-history h3 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+
+        .payment-item {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            border-left: 4px solid #667eea;
+        }
+
+        .payment-item.success {
+            border-left-color: #28a745;
+        }
+
+        .payment-item.failed {
+            border-left-color: #dc3545;
+        }
+
+        .payment-item.processing {
+            border-left-color: #ffc107;
+        }
+
+        .payment-item.cancelled {
+            border-left-color: #6c757d;
+        }
+
+        .payment-id {
+            font-family: monospace;
+            font-size: 12px;
+            color: #666;
+        }
+
+        .payment-time {
+            font-size: 12px;
+            color: #999;
+            margin-top: 5px;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🛍️ Dodo Payments Test</h1>
+        <p class="subtitle">Test checkout integration with persistent status tracking</p>
+
+        <!-- Status Indicator -->
+        <div id="statusIndicator" class="status-indicator">
+            <span class="status-icon"></span>
+            <span class="status-text"></span>
+        </div>
+
+        <!-- Product Info -->
+        <div class="product-info">
+            <h3>Product Details</h3>
+            <div class="product-detail">
+                <span>Product ID:</span>
+                <strong>pdt_COsUtqE6DCojdaBh7Ine1</strong>
+            </div>
+            <div class="product-detail">
+                <span>Quantity:</span>
+                <strong>1</strong>
+            </div>
+            <div class="product-detail">
+                <span>Environment:</span>
+                <strong>Test Mode</strong>
+            </div>
+        </div>
+
+        <!-- Checkout Button -->
+        <button class="checkout-btn" onclick="initiateCheckout()">
+            🚀 Proceed to Checkout
+        </button>
+
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p style="margin-top: 10px; color: #666;">Loading checkout...</p>
+        </div>
+
+        <!-- Payment History -->
+        <div class="payment-history">
+            <h3>Payment History</h3>
+            <div id="paymentHistory"></div>
+        </div>
+    </div>
+
+    <script>
+        // Check for last payment status on page load
+        window.addEventListener('DOMContentLoaded', () => {
+            // Check if we have payment info in URL parameters
+            checkURLParameters();
+            checkLastPaymentStatus();
+            loadPaymentHistory();
+        });
+
+        // Check URL for payment parameters
+        function checkURLParameters() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const paymentId = urlParams.get('payment_id');
+            const status = urlParams.get('status');
+
+            if (paymentId && status) {
+                // We have payment info from return URL
+                const paymentData = {
+                    id: paymentId,
+                    status: status,
+                    timestamp: new Date().toISOString()
+                };
+
+                // Save to server
+                savePaymentToServer(paymentData);
+
+                // Save to localStorage
+                localStorage.setItem('lastPaymentStatus', JSON.stringify({
+                    status: status,
+                    timestamp: paymentData.timestamp
+                }));
+
+                // Show status immediately
+                showStatusIndicator(status, paymentData.timestamp);
+
+                // Clean URL (remove parameters)
+                window.history.replaceState({}, document.title, '/');
+            }
+        }
+
+        // Save payment to server
+        async function savePaymentToServer(paymentData) {
+            try {
+                const response = await fetch('/api/save-payment', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(paymentData)
+                });
+
+                if (response.ok) {
+                    console.log('Payment saved to server');
+                    // Reload payment history
+                    setTimeout(() => loadPaymentHistory(), 500);
+                }
+            } catch (error) {
+                console.error('Error saving payment to server:', error);
+            }
+        }
+
+        async function initiateCheckout() {
+            const btn = document.querySelector('.checkout-btn');
+            const loading = document.getElementById('loading');
+            
+            btn.disabled = true;
+            loading.style.display = 'block';
+
+            try {
+                // Call the static checkout endpoint with the product ID
+                const response = await fetch('/api/checkout?productId=pdt_COsUtqE6DCojdaBh7Ine1&quantity=1');
+                const data = await response.json();
+
+                if (data.checkout_url) {
+                    // Store that we initiated a checkout
+                    localStorage.setItem('checkoutInitiated', Date.now());
+                    
+                    // Redirect to Dodo Payments checkout
+                    window.location.href = data.checkout_url;
+                } else {
+                    throw new Error('No checkout URL received');
+                }
+            } catch (error) {
+                console.error('Checkout error:', error);
+                alert('Failed to initiate checkout. Please try again.');
+                btn.disabled = false;
+                loading.style.display = 'none';
+            }
+        }
+
+        async function checkLastPaymentStatus() {
+            // Check if there's a stored payment status
+            const lastStatus = localStorage.getItem('lastPaymentStatus');
+            
+            if (lastStatus) {
+                const status = JSON.parse(lastStatus);
+                showStatusIndicator(status.status, status.timestamp);
+            }
+
+            // Also check with the server for any new payments
+            try {
+                const response = await fetch('/api/payments');
+                const payments = await response.json();
+                
+                if (payments.length > 0) {
+                    // Get the most recent payment
+                    const lastPayment = payments[payments.length - 1];
+                    showStatusIndicator(lastPayment.status, lastPayment.timestamp);
+                    
+                    // Store in localStorage for persistence
+                    localStorage.setItem('lastPaymentStatus', JSON.stringify({
+                        status: lastPayment.status,
+                        timestamp: lastPayment.timestamp
+                    }));
+                }
+            } catch (error) {
+                console.error('Error checking payment status:', error);
+            }
+        }
+
+        function showStatusIndicator(status, timestamp) {
+            const indicator = document.getElementById('statusIndicator');
+            const icon = indicator.querySelector('.status-icon');
+            const text = indicator.querySelector('.status-text');
+
+            // Remove all status classes
+            indicator.className = 'status-indicator';
+
+            const timeStr = new Date(timestamp).toLocaleString();
+
+            switch(status) {
+                case 'success':
+                    indicator.classList.add('success');
+                    icon.textContent = '✅';
+                    text.textContent = `Payment successful! (${timeStr})`;
+                    break;
+                case 'failed':
+                    indicator.classList.add('failed');
+                    icon.textContent = '❌';
+                    text.textContent = `Payment failed (${timeStr})`;
+                    break;
+                case 'processing':
+                    indicator.classList.add('processing');
+                    icon.textContent = '⏳';
+                    text.textContent = `Payment processing... (${timeStr})`;
+                    break;
+                case 'cancelled':
+                    indicator.classList.add('cancelled');
+                    icon.textContent = '🚫';
+                    text.textContent = `Payment cancelled (${timeStr})`;
+                    break;
+            }
+        }
+
+        async function loadPaymentHistory() {
+            try {
+                const response = await fetch('/api/payments');
+                const payments = await response.json();
+                
+                const historyDiv = document.getElementById('paymentHistory');
+                
+                if (payments.length === 0) {
+                    historyDiv.innerHTML = '<p style="color: #999;">No payment history yet</p>';
+                    return;
+                }
+
+                historyDiv.innerHTML = payments.reverse().map(payment => `
+                    <div class="payment-item ${payment.status}">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <span style="font-weight: 600; color: #333;">
+                                ${getStatusEmoji(payment.status)} ${payment.status.toUpperCase()}
+                            </span>
+                            <span class="payment-id">${payment.id || 'N/A'}</span>
+                        </div>
+                        <div class="payment-time">${new Date(payment.timestamp).toLocaleString()}</div>
+                    </div>
+                `).join('');
+            } catch (error) {
+                console.error('Error loading payment history:', error);
+            }
+        }
+
+        function getStatusEmoji(status) {
+            const emojis = {
+                'success': '✅',
+                'failed': '❌',
+                'processing': '⏳',
+                'cancelled': '🚫'
+            };
+            return emojis[status] || '⚪';
+        }
+
+        // Refresh payment history every 5 seconds
+        setInterval(() => {
+            checkLastPaymentStatus();
+            loadPaymentHistory();
+        }, 5000);
+    </script>
+</body>
+</html>
