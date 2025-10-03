@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payment Complete - Dodo Payments</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            padding: 50px;
+            max-width: 600px;
+            width: 100%;
+            text-align: center;
+        }
+
+        .success-icon {
+            font-size: 80px;
+            margin-bottom: 20px;
+            animation: bounce 0.5s ease;
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-20px); }
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 36px;
+        }
+
+        .message {
+            color: #666;
+            font-size: 18px;
+            margin-bottom: 30px;
+            line-height: 1.6;
+        }
+
+        .info-box {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+            text-align: left;
+        }
+
+        .info-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .info-item:last-child {
+            border-bottom: none;
+        }
+
+        .info-label {
+            color: #666;
+            font-weight: 500;
+        }
+
+        .info-value {
+            color: #333;
+            font-weight: 600;
+        }
+
+        .btn-container {
+            display: flex;
+            gap: 15px;
+            margin-top: 30px;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 15px 30px;
+            font-size: 16px;
+            border-radius: 10px;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-secondary {
+            background: white;
+            color: #667eea;
+            border: 2px solid #667eea;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .status-pending {
+            color: #856404;
+            background: #fff3cd;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div id="content">
+            <div class="success-icon">⏳</div>
+            <h1>Processing Your Payment</h1>
+            <p class="message">Please wait while we confirm your payment status...</p>
+            <div class="loading"></div>
+        </div>
+    </div>
+
+    <script>
+        // Get URL parameters
+        const urlParams = new URLSearchParams(window.location.search);
+        const paymentId = urlParams.get('payment_id');
+        const status = urlParams.get('status');
+
+        // Check payment status
+        async function checkPaymentStatus() {
+            try {
+                // Wait a bit for webhook to process
+                await new Promise(resolve => setTimeout(resolve, 2000));
+
+                // Try to get payment status from server
+                const response = await fetch('/api/payments');
+                const payments = await response.json();
+
+                let paymentStatus = null;
+
+                // If we have a payment_id, look for that specific payment
+                if (paymentId && payments.length > 0) {
+                    const payment = payments.find(p => p.id === paymentId);
+                    if (payment) {
+                        paymentStatus = payment.status;
+                    }
+                } else if (payments.length > 0) {
+                    // Otherwise, get the most recent payment
+                    const lastPayment = payments[payments.length - 1];
+                    paymentStatus = lastPayment.status;
+                }
+
+                // Store in localStorage for persistence
+                if (paymentStatus) {
+                    localStorage.setItem('lastPaymentStatus', JSON.stringify({
+                        status: paymentStatus,
+                        timestamp: new Date().toISOString()
+                    }));
+                }
+
+                // Show appropriate message based on status
+                displayStatus(paymentStatus || status || 'pending');
+            } catch (error) {
+                console.error('Error checking payment status:', error);
+                displayStatus('pending');
+            }
+        }
+
+        function displayStatus(status) {
+            const content = document.getElementById('content');
+
+            let icon, title, message, iconColor;
+
+            switch(status) {
+                case 'success':
+                    icon = '✅';
+                    title = 'Payment Successful!';
+                    message = 'Thank you for your purchase. Your payment has been processed successfully.';
+                    iconColor = '#28a745';
+                    break;
+                case 'failed':
+                    icon = '❌';
+                    title = 'Payment Failed';
+                    message = 'Unfortunately, your payment could not be processed. Please try again.';
+                    iconColor = '#dc3545';
+                    break;
+                case 'processing':
+                    icon = '⏳';
+                    title = 'Payment Processing';
+                    message = 'Your payment is being processed. This may take a few moments.';
+                    iconColor = '#ffc107';
+                    break;
+                case 'cancelled':
+                    icon = '🚫';
+                    title = 'Payment Cancelled';
+                    message = 'You have cancelled the payment process.';
+                    iconColor = '#6c757d';
+                    break;
+                default:
+                    icon = '⏳';
+                    title = 'Confirming Payment';
+                    message = 'We are confirming your payment status. Please wait...';
+                    iconColor = '#667eea';
+            }
+
+            content.innerHTML = `
+                <div class="success-icon" style="color: ${iconColor}">${icon}</div>
+                <h1>${title}</h1>
+                <p class="message">${message}</p>
+                
+                <div class="info-box">
+                    <div class="info-item">
+                        <span class="info-label">Status:</span>
+                        <span class="info-value">${status.toUpperCase()}</span>
+                    </div>
+                    ${paymentId ? `
+                    <div class="info-item">
+                        <span class="info-label">Payment ID:</span>
+                        <span class="info-value" style="font-family: monospace; font-size: 14px;">${paymentId}</span>
+                    </div>
+                    ` : ''}
+                    <div class="info-item">
+                        <span class="info-label">Date:</span>
+                        <span class="info-value">${new Date().toLocaleString()}</span>
+                    </div>
+                </div>
+
+                <div class="btn-container">
+                    <button class="btn btn-primary" onclick="window.location.href='/'">
+                        🏠 Return to Home
+                    </button>
+                    ${status === 'failed' || status === 'cancelled' ? `
+                    <button class="btn btn-secondary" onclick="retryPayment()">
+                        🔄 Try Again
+                    </button>
+                    ` : ''}
+                </div>
+            `;
+        }
+
+        function retryPayment() {
+            window.location.href = '/';
+        }
+
+        // Run on page load
+        window.addEventListener('DOMContentLoaded', () => {
+            checkPaymentStatus();
+        });
+
+        // Refresh status every 5 seconds if still processing
+        const interval = setInterval(() => {
+            const status = localStorage.getItem('lastPaymentStatus');
+            if (status) {
+                const parsed = JSON.parse(status);
+                if (parsed.status === 'processing') {
+                    checkPaymentStatus();
+                } else {
+                    clearInterval(interval);
+                }
+            }
+        }, 5000);
+    </script>
+</body>
+</html> 
